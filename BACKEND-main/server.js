@@ -415,8 +415,14 @@ async function requestListener(req, res) {
   }
 }
 
-const server = http.createServer(requestListener);
+if (require.main === module) {
+  const server = http.createServer(requestListener);
 
-server.listen(PORT, HOST, () => {
-  console.log(`HirePro backend running at http://${HOST}:${PORT}`);
-});
+  server.listen(PORT, HOST, () => {
+    console.log(`HirePro backend running at http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  requestListener,
+};

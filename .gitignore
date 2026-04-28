@@ -8,3 +8,5 @@ HirePro-main/node_modules/
 HirePro-main/dist/
 BACKEND-main/node_modules/
 BACKEND-main/data/*.db-journal
+
+.vercel

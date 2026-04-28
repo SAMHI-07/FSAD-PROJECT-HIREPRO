@@ -1,0 +1,23 @@
+{
+  "buildCommand": "cd HirePro-main && npm run build",
+  "outputDirectory": "HirePro-main/dist",
+  "installCommand": "cd HirePro-main && npm install",
+  "functions": {
+    "api/[...path].js": {
+      "includeFiles": "BACKEND-main/**"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[...path].js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
+}
