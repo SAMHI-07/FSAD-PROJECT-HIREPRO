@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: automated-retraining-mlflow
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: automated-model-retraining
+    buildCommand: pip install -r requirements.txt
+    startCommand: mlflow server --host 0.0.0.0 --port $PORT --backend-store-uri "$DATABASE_URL" --artifacts-destination /var/data/mlartifacts --app-name basic-auth --allowed-hosts automated-retraining-mlflow.onrender.com
+    disk:
+      name: mlflow-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: automated-retraining-mlflow-db
+          property: connectionString
+      - key: MLFLOW_FLASK_SERVER_SECRET_KEY
+        generateValue: true
+      - key: MLFLOW_AUTH_ADMIN_USERNAME
+        value: admin
+      - key: MLFLOW_AUTH_ADMIN_PASSWORD
+        generateValue: true
+      - key: MLFLOW_AUTH_CONFIG_PATH
+        value: /opt/render/project/src/automated-model-retraining/mlflow-auth.ini
+      - key: MLFLOW_SERVER_ALLOWED_HOSTS
+        value: automated-retraining-mlflow.onrender.com
+
+  - type: web
+    name: automated-retraining-api
+    runtime: python
+    plan: starter
+    region: oregon
+    rootDir: automated-model-retraining
+    buildCommand: pip install -r requirements.txt && python src/train.py
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: API_KEY
+        generateValue: true
+      - key: MODEL_PATH
+        value: models/model.pkl
+
+databases:
+  - name: automated-retraining-mlflow-db
+    plan: basic-256mb
+    region: oregon
+    databaseName: mlflow
+    user: mlflow
