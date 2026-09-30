@@ -46,7 +46,7 @@ The retraining script fits on the labeled production batch, then evaluates both 
 
 Because this project is nested inside a larger repository, the active workflow is at the repository root in `.github/workflows/automated-model-retraining.yml`. The copy in this folder is retained for when the project is used as its own repository.
 
-Commit/push this folder to GitHub. Keep real production data and models in a private repository; the example CSVs are synthetic. The scheduled monitor and retraining run in the same workflow, so no long-lived GitHub token is required for workflow-to-workflow dispatch. Set the optional repository variable `DRIFT_THRESHOLD` to change the drift gate. Set `MLFLOW_TRACKING_URI` as a repository secret to use a secured shared tracking server; otherwise CI uses local file tracking and uploads the run data and model as workflow artifacts.
+Commit/push this folder to GitHub. Keep real production data and models in a private repository; the example CSVs are synthetic. The scheduled monitor and retraining run in the same workflow, so no long-lived GitHub token is required for workflow-to-workflow dispatch. Set the optional repository variable `DRIFT_THRESHOLD` to change the drift gate. Set `MLFLOW_TRACKING_URI` as a repository secret to use a secured shared tracking server; otherwise CI uses a SQLite tracking database and uploads the run database, artifacts, and model as workflow artifacts.
 ## Docker
 
 ```bash
@@ -55,6 +55,8 @@ docker run --rm -p 8000:8000 drift-retraining
 ```
 
 Mount a persistent model/data directory for non-demo use. Do not expose MLflow or the prediction API publicly without authentication, access controls and TLS.
+
+
 
 
 
