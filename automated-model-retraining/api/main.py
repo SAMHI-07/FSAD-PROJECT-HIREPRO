@@ -16,6 +16,8 @@ def health(): return {"status": "ok", "model_loaded": MODEL_PATH.exists()}
 @app.post("/predict")
 def predict(request: PredictionRequest, x_api_key: str | None = Header(default=None, alias="X-API-Key")):
     expected_api_key = os.getenv("API_KEY")
+    if os.getenv("VERCEL") == "1" and not expected_api_key:
+        raise HTTPException(status_code=503, detail="API_KEY is not configured")
     if expected_api_key and (x_api_key is None or not hmac.compare_digest(x_api_key, expected_api_key)):
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
     if not MODEL_PATH.exists(): raise HTTPException(status_code=503, detail="Model is not trained yet")

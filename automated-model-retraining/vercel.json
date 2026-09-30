@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pip install -r requirements-api.txt",
+  "buildCommand": "python src/build_api_model.py",
+  "functions": {
+    "api/main.py": {
+      "includeFiles": "models/model.pkl",
+      "maxDuration": 30
+    }
+  }
+}
