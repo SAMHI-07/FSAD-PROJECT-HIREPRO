@@ -42,6 +42,16 @@ Environment variables: `TARGET_COLUMN` (`churned`), `DRIFT_THRESHOLD` (`0.30`), 
 
 The retraining script fits on the labeled production batch, then evaluates both current and candidate models on the same held-out slice of labeled reference data. A rejected candidate is a successful validation outcome and does not fail the CI job. It promotes only if candidate F1 is at least current F1 plus `MIN_F1_DELTA`. This is a basic gate; production rollout should also validate business costs, calibration, subgroup performance and a time-appropriate holdout. MLflow logs both training runs and registers a candidate only after it passes this gate. The local `models/model.pkl` is the API's active bundle. A rejected candidate is kept as a local candidate artifact but does not replace the active model.
 
+## Hosted tracking and API deployment
+
+The repository root includes a Render Blueprint at `render.yaml`. It provisions an authenticated MLflow tracking server with a managed PostgreSQL metadata database and a persistent disk for MLflow artifacts and authentication data. It also builds and deploys the FastAPI service with an automatically generated API key. The hosted services use paid Render plans (including a persistent disk); review the plan and pricing shown in Render before provisioning.
+
+To deploy, connect this GitHub repository at [Render Blueprints](https://dashboard.render.com/blueprints) and create a Blueprint from `render.yaml`. Render generates the MLflow admin password, CSRF secret and prediction API key. After the first successful MLflow startup, remove `MLFLOW_AUTH_ADMIN_PASSWORD` from the MLflow service environment as recommended by [MLflow's authentication setup](https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/); store its value securely first. Keep the API key private.
+
+Copy the public MLflow service URL into GitHub repository Actions secrets as `MLFLOW_TRACKING_URI`, then add `MLFLOW_TRACKING_USERNAME` (`admin`) and `MLFLOW_TRACKING_PASSWORD` (the generated admin password). Future monitoring and retraining runs will use the persistent hosted tracker instead of the per-run SQLite fallback. The deployed prediction endpoint is `/predict`; send the generated key in the `X-API-Key` header. Local API use remains unauthenticated unless `API_KEY` is set.
+
+The deployed API trains its initial bundle from the included reference CSV at build time. Real deployments should replace the synthetic example data with an approved data source and keep production data private.
+
 ## GitHub Actions setup
 
 Because this project is nested inside a larger repository, the active workflow is at the repository root in `.github/workflows/automated-model-retraining.yml`. The copy in this folder is retained for when the project is used as its own repository.

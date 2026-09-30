@@ -1,8 +1,10 @@
 from __future__ import annotations
 from pathlib import Path
+import os
+import hmac
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = Path(__import__('os').getenv("MODEL_PATH", ROOT / "models/model.pkl"))
@@ -12,7 +14,10 @@ class PredictionRequest(BaseModel):
 @app.get("/health")
 def health(): return {"status": "ok", "model_loaded": MODEL_PATH.exists()}
 @app.post("/predict")
-def predict(request: PredictionRequest):
+def predict(request: PredictionRequest, x_api_key: str | None = Header(default=None, alias="X-API-Key")):
+    expected_api_key = os.getenv("API_KEY")
+    if expected_api_key and (x_api_key is None or not hmac.compare_digest(x_api_key, expected_api_key)):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
     if not MODEL_PATH.exists(): raise HTTPException(status_code=503, detail="Model is not trained yet")
     bundle=joblib.load(MODEL_PATH); frame=pd.DataFrame(request.records); missing=sorted(set(bundle["features"])-set(frame.columns))
     if missing: raise HTTPException(status_code=422, detail=f"Missing features: {missing}")
