@@ -42,15 +42,19 @@ Environment variables: `TARGET_COLUMN` (`churned`), `DRIFT_THRESHOLD` (`0.30`), 
 
 The retraining script fits on the labeled production batch, then evaluates both current and candidate models on the same held-out slice of labeled reference data. A rejected candidate is a successful validation outcome and does not fail the CI job. It promotes only if candidate F1 is at least current F1 plus `MIN_F1_DELTA`. This is a basic gate; production rollout should also validate business costs, calibration, subgroup performance and a time-appropriate holdout. MLflow logs both training runs and registers a candidate only after it passes this gate. The local `models/model.pkl` is the API's active bundle. A rejected candidate is kept as a local candidate artifact but does not replace the active model.
 
-## Hosted tracking and API deployment
+## No-cost hosted tracking and API
 
-The repository root includes a Render Blueprint at `render.yaml`. It provisions an authenticated MLflow tracking server with a managed PostgreSQL metadata database and a persistent disk for MLflow artifacts and authentication data. It also builds and deploys the FastAPI service with an automatically generated API key. The hosted services use paid Render plans (including a persistent disk); review the plan and pricing shown in Render before provisioning.
+The GitHub Actions workflow supports hosted MLflow through DagsHub. DagsHub provides an MLflow endpoint for each repository. Its Individual plan is $0 and includes up to 100 tracked experiments in private repositories and 20 GB of storage; public repositories have unlimited experiment tracking. Review [DagsHub's current plan limits](https://dagshub.com/pricing). Create a DagsHub repository named `FSAD-PROJECT-HIREPRO` under your account, then add these GitHub Actions repository secrets:
 
-To deploy, connect this GitHub repository at [Render Blueprints](https://dashboard.render.com/blueprints) and create a Blueprint from `render.yaml`. Render generates the MLflow admin password, CSRF secret and prediction API key. After the first successful MLflow startup, remove `MLFLOW_AUTH_ADMIN_PASSWORD` from the MLflow service environment as recommended by [MLflow's authentication setup](https://mlflow.org/docs/latest/self-hosting/security/basic-http-auth/); store its value securely first. Keep the API key private.
+- `MLFLOW_TRACKING_URI`: `https://dagshub.com/<your-DagsHub-username>/FSAD-PROJECT-HIREPRO.mlflow`
+- `MLFLOW_TRACKING_USERNAME`: your DagsHub username
+- `MLFLOW_TRACKING_PASSWORD`: a DagsHub access token
 
-Copy the public MLflow service URL into GitHub repository Actions secrets as `MLFLOW_TRACKING_URI`, then add `MLFLOW_TRACKING_USERNAME` (`admin`) and `MLFLOW_TRACKING_PASSWORD` (the generated admin password). Future monitoring and retraining runs will use the persistent hosted tracker instead of the per-run SQLite fallback. The deployed prediction endpoint is `/predict`; send the generated key in the `X-API-Key` header. Local API use remains unauthenticated unless `API_KEY` is set.
+The workflow then writes experiment runs, artifacts, and registered models to the persistent hosted tracker. If these secrets are not configured, CI retains its local per-run SQLite fallback. Keep the DagsHub token private.
 
-The deployed API trains its initial bundle from the included reference CSV at build time. Real deployments should replace the synthetic example data with an approved data source and keep production data private.
+The root `render.yaml` is an optional **free-tier** API deployment only; it does not create a paid tracker, database, or disk. Connect the GitHub repository in [Render Blueprints](https://dashboard.render.com/blueprints) and create a Blueprint from `render.yaml`. Render generates an API key for `/predict`, which must be sent in the `X-API-Key` header. The free service can spin down when idle, so the first request may be delayed. Its initial model is trained from the included reference CSV at build time. Local API use remains unauthenticated unless `API_KEY` is set.
+
+The example datasets are synthetic. Keep real production data in private storage and check the free-tier limits before logging artifacts.
 
 ## GitHub Actions setup
 
