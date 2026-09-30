@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+mlruns/
+mlflow.db
+mlartifacts/
+models/*.pkl
+!models/.gitkeep
+monitoring/*.html
+!monitoring/.gitkeep
+*.log
